@@ -1,38 +1,271 @@
-/* Ajustes responsivos escritos à mão.
+/* Layout mobile — escrito à mão sobre o passe automático.
    As media queries derivadas dos estilos do canvas (grids, títulos, paddings)
-   são geradas automaticamente em generated.css pelo build. Aqui ficam só os
-   casos que nenhuma regra automática resolve. Carregado depois de
-   generated.css, então vence por ordem de origem. */
+   são geradas em generated.css por autoResponsive() no build. Este arquivo
+   carrega depois e vence por ordem de origem; ele corrige o que a regra
+   automática não sabe (ordem das seções, densidade, topo, CTA fixo).
 
-/* Rede de segurança: nada estoura a viewport. */
-body { overflow-x: hidden; }
+   Âncoras: as classes geradas são hashes instáveis entre builds, então tudo
+   aqui se prende aos data-r="..." dos .dc.html. Ver PLANO-MOBILE.md.
+
+   Breakpoints: 760px = topo (todas as páginas) · 640px = corpo da home. */
+
+/* ══════════════════════════════════════ base — vale em qualquer largura ══ */
+
+/* clip em vez de hidden: overflow-x:hidden faz do elemento um contêiner de
+   rolagem, e isso quebra o position:sticky do header. `clip` corta igual sem
+   criar o contêiner. A linha `hidden` fica antes como fallback para browsers
+   que não conhecem `clip`. */
+body { overflow-x: hidden; overflow-x: clip; }
+[data-r="pagina"] { overflow-x: hidden; overflow-x: clip; }
 img, video, svg { max-width: 100%; }
 img, video { height: auto; }
 
-/* O header é um flex de logo + nav + botão. Em telas estreitas a nav quebra
-   para a segunda linha e rola horizontalmente em vez de espremer os itens. */
+/* Menu sanfona e barra do WhatsApp existem só no celular. O <helmet> do canvas
+   não carrega este arquivo, então no editor visual os dois aparecem sempre. */
+[data-r="menu"],
+[data-r="barra"] { display: none; }
+
+/* O painel só existe com o <details> aberto. Não dependemos do estilo de UA:
+   com position:absolute o navegador ainda reserva a caixa do painel fechado. */
+[data-r="menu"]:not([open]) > nav { display: none; }
+
+[data-r="menu"] > summary { list-style: none; }
+[data-r="menu"] > summary::-webkit-details-marker { display: none; }
+[data-r="menu"] > summary::marker { content: ""; }
+
+/* ══════════════════════════════════════════════ ≤760px — topo compacto ══ */
+
 @media (max-width: 760px) {
-  body header { row-gap: 12px; padding-left: 20px; padding-right: 20px; }
-  body header nav {
-    order: 3;
+
+  /* Header fixo: o CTA e o menu ficam alcançáveis em qualquer ponto da página. */
+  [data-r="topo"] {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    gap: 10px;
+    row-gap: 10px;
+    padding: 10px 16px;
+    flex-wrap: nowrap;
+    background: var(--color-bg);
+  }
+  [data-r="topo"] > a:first-child {
+    font-size: 17px;
+    gap: 9px;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  [data-r="topo"] > a:first-child img { width: 38px; height: 38px; }
+
+  /* A nav horizontal rolável dá lugar ao sanfona. */
+  [data-r="nav-desktop"] { display: none; }
+
+  /* Com a barra fixa embaixo, uma segunda pílula verde aqui em cima seria a
+     mesma chamada duas vezes na mesma tela: o botão vira só o ícone. */
+  [data-r="topo-cta"] {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    flex: none;
+  }
+  [data-r="topo-cta-label"] { display: none; }
+
+  [data-r="menu"] { display: block; flex: none; position: static; }
+  [data-r="menu"] > nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-md);
+    padding: 4px 16px 12px;
+    border-top: 1px solid var(--color-neutral-200);
+  }
+  [data-r="menu"] > nav a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    border-bottom: 1px solid var(--color-neutral-200);
+  }
+  [data-r="menu"] > nav a:last-child { border-bottom: 0; }
+
+  /* Âncoras (#ventosaterapia, #resultados) não podem parar sob o header fixo. */
+  [id] { scroll-margin-top: 72px; }
+
+  /* ─────────────────────────────────────────── barra fixa do WhatsApp ─── */
+
+  [data-r="barra"] {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    background: var(--color-bg);
+    box-shadow: 0 -2px 14px color-mix(in srgb, #2b2f28 16%, transparent);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  }
+  /* Sem isto a barra cobre o fim do rodapé. */
+  [data-r="pagina"] { padding-bottom: 78px; }
+}
+
+/* ═════════════════════════════════════════ ≤640px — corpo da home ══════ */
+
+@media (max-width: 640px) {
+
+  /* ─── ordem das seções ────────────────────────────────────────────────
+     Só na home (data-home). Os serviços sobem para logo depois do hero: são
+     o motivo da visita, e antes só apareciam na quinta seção. As seções não
+     têm margin — só padding — então virar item de flex não muda o espaçamento. */
+  [data-home] { display: flex; flex-direction: column; }
+
+  [data-home] [data-r="topo"]        { order: 1; }
+  [data-home] [data-r="hero"]        { order: 2; }
+  [data-home] [data-r="servicos"]    { order: 3; }
+  [data-home] [data-r="passos"]      { order: 4; }
+  [data-home] [data-r="bio"]         { order: 5; }
+  [data-home] [data-r="galeria"]     { order: 6; }
+  [data-home] [data-r="depoimentos"] { order: 7; }
+  [data-home] [data-r="cta"]         { order: 8; }
+  [data-home] [data-r="rodape"]      { order: 9; }
+
+  /* A faixa "Resultados" leva à galeria Antes/Depois, que o build omite
+     enquanto as 4 fotos não existirem — hoje o link degrada para /servicos e
+     vira um CTA que não leva a lugar nenhum. REMOVER esta regra quando as
+     fotos chegarem (ver "Bloqueios" em PLANO-PRODUCAO.md). */
+  [data-r="resultados"] { display: none; }
+
+  /* Os círculos absolutos não somam nada em 375px e podem estourar a lateral. */
+  [data-deco] { display: none; }
+
+  /* ─── tipografia ──────────────────────────────────────────────────────
+     O fator 0,62 do passe automático derruba os H2 de seção para 20px — menos
+     que os H3 dos cards (19px), o que achata a hierarquia. Aqui ela volta. */
+  [data-r="pagina"] h1 { font-size: 30px; line-height: 1.15; text-wrap: balance; }
+  [data-r="pagina"] section h2 { font-size: 25px; line-height: 1.2; }
+  [data-r="cta"] h2 { font-size: 26px; }
+  [data-r="citacao"] { font-size: 24px; margin-bottom: 28px; }
+
+  /* Parte do público é idosa, ou é filho de idoso decidindo pelo pai:
+     14px a 0,75 de opacidade é o pior caso numa tela ao sol. */
+  [data-r="servicos"] p,
+  [data-r="passos"] p { font-size: 15px; opacity: 0.88; }
+  [data-r="bio"] p,
+  [data-r="depoimentos"] p { opacity: 0.88; }
+
+  /* ─── hero ─────────────────────────────────────────────────────────── */
+  [data-r="hero-grid"] { gap: 24px; padding-top: 20px; padding-bottom: 36px; }
+  /* Sem recorte: o hero é uma composição pronta (fundo, curvas, a coluna
+     vertebral ao fundo), e cortá-la para um formato de tela quebraria o
+     desenho. Fica na proporção nativa, 667×762. */
+  [data-r="hero-foto"] { border-radius: 20px; }
+
+  /* No desktop o retrato fica ao lado do texto, na coluna da direita. No
+     celular ele sobe para o topo: é a primeira coisa depois do menu, e é o
+     rosto que dá confiança antes de qualquer texto. `order` vale em grid. */
+  [data-r="hero-media"] { order: -1; }
+
+  /* O botão de WhatsApp do hero é a mesma chamada da barra fixa, visível ao
+     mesmo tempo na mesma tela. Some no celular; o hero fica com a ação que a
+     barra não cobre — ir para os serviços. */
+  [data-r="hero-cta-wa"] { display: none; }
+
+  /* O card do vídeo era uma miniatura de 118px ao lado da legenda; empilhado,
+     o player fica clicável de verdade. */
+  [data-r="hero-video"] { flex-direction: column; align-items: stretch; gap: 12px; }
+  [data-r="hero-video"] video {
     width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+    flex: none;
+  }
+
+  /* ─── cards de serviço e passos ───────────────────────────────────────
+     Ícone à esquerda em vez de empilhado: cada card cai de ~200px para ~130px,
+     e os 4 serviços passam a caber em pouco mais de uma tela. */
+  [data-r="servico-card"] {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    column-gap: 14px;
+    row-gap: 8px;
+    align-items: start;
+    padding: 20px;
+  }
+  [data-r="servico-card"] > :first-child {
+    grid-row: 1 / 4;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+  [data-r="servico-card"] h3 { font-size: 18px; }
+  [data-r="servico-card"] a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  [data-r="servicos-grid"] { gap: 14px; }
+
+  [data-r="passo"] {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    column-gap: 14px;
+    row-gap: 6px;
+    align-items: start;
+  }
+  [data-r="passo"] > :first-child {
+    grid-row: 1 / 3;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0;
+  }
+  [data-r="passos-grid"] { gap: 22px; }
+
+  /* ─── carrosséis ──────────────────────────────────────────────────────
+     Empilhados, os 3 depoimentos somam ~620px de rolagem para um conteúdo que
+     se lê de relance. Em fila com snap ocupam ~260px e nada é escondido. */
+  [data-r="depoimentos-grid"],
+  [data-r="galeria-grid"] {
+    display: flex;
     overflow-x: auto;
+    scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding-bottom: 2px;
+    gap: 12px;
+    margin-inline: -16px;
+    padding-inline: 16px;
+    padding-bottom: 4px;
   }
-  body header nav::-webkit-scrollbar { display: none; }
-  body header nav a { white-space: nowrap; }
+  [data-r="depoimentos-grid"]::-webkit-scrollbar,
+  [data-r="galeria-grid"]::-webkit-scrollbar { display: none; }
+  [data-r="depoimentos-grid"] > *,
+  [data-r="galeria-grid"] > * {
+    flex: 0 0 84%;
+    scroll-snap-align: start;
+  }
+
+  /* ─── bio ─────────────────────────────────────────────────────────────
+     As 5 credenciais do card estão todas no parágrafo logo abaixo. No celular,
+     uma lista seguida do mesmo texto é só rolagem repetida — o "12 anos de
+     experiência" e o parágrafo completo continuam visíveis. */
+  [data-r="bio-creds"] { display: none; }
+  [data-r="bio-card"] { padding: 22px 24px; }
+
+  /* ─── rodapé ──────────────────────────────────────────────────────────── */
+  [data-r="rodape"] img { width: 140px; }
+  [data-r="rodape"] nav { flex-wrap: wrap; gap: 4px 20px; }
+  [data-r="rodape"] nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
-/* Blocos que o canvas posiciona em absoluto são decorativos: em telas pequenas
-   só atrapalham o fluxo e podem criar scroll lateral. */
-@media (max-width: 640px) {
-  body section > div[class][style] { position: static; }
-}
+/* ══════════════════════════════════ ≤380px — telas estreitas (iPhone SE) ══ */
 
-/* Vídeo do hero: no desktop é uma miniatura de largura fixa; no celular
-   ocupa a linha inteira para continuar clicável. */
-@media (max-width: 480px) {
-  body video { width: 100% !important; height: auto !important; }
+@media (max-width: 380px) {
+  [data-r="topo"] > a:first-child { font-size: 15px; gap: 7px; }
+  [data-r="topo"] > a:first-child img { width: 34px; height: 34px; }
+  [data-r="servico-card"] { padding: 18px 16px; }
 }
