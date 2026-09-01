@@ -1,0 +1,23 @@
+{
+  "name": "site-darcilene",
+  "version": "1.0.0",
+  "description": "Site institucional Darcilene Xavier Fisioterapia",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:strict": "node build.mjs --strict",
+    "otimizar": "node scripts/otimizar-imagens.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alessandro-Franca01/site-darcilene.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Alessandro-Franca01/site-darcilene/issues"
+  },
+  "homepage": "https://github.com/Alessandro-Franca01/site-darcilene#readme",
+  "devDependencies": {
+    "sharp": "^0.35.4"
+  },
+  "private": true,
+  "type": "module"
+}

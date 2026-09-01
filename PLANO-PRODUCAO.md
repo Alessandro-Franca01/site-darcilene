@@ -91,83 +91,55 @@ Como as classes geradas são hashes, os overrides precisam de âncoras estáveis
 
 Regra geral no topo: `img,video{max-width:100%;height:auto}` e `body{overflow-x:hidden}` como rede de segurança.
 
-## Fase 4 — Assets  *(mapeada, não executada)*
+## Fase 4 — Assets  *(executada)*
 
-**Status:** pendente. Não bloqueia deploy — o site já funciona. É ganho de
-performance e de custo de banda, a ser feito quando fizer diferença (Lighthouse
-baixo, 3G lento, ou quando a Vercel começar a cobrar tráfego).
+`npm run otimizar` (`scripts/otimizar-imagens.mjs`, com `sharp`) gera as versões
+WebP ao lado dos originais, que continuam sendo a fonte em alta. O build prefere
+o `.webp` quando existe, então reverter uma otimização é apagar o arquivo — os
+artboards seguem apontando para os `.jpg`/`.png` e não foram tocados.
 
-### Diagnóstico medido
+### Resultado
 
-Dimensão real do arquivo contra o tamanho em que ele é de fato renderizado:
-
-| Arquivo | Original | Renderizado | Alvo (2x) | Estimado | Ganho |
+| Arquivo | Antes | Depois | Alvo | q | Ganho |
 |---|---|---|---|---|---|
-| `darcilene-retrato.jpg` | 687×906, **700 KB** | coluna ~550px | 687px (mantém) | ~70 KB | **90%** |
-| `logo-completo.png` | 760×747, **207 KB** | 176px de largura | 352px | ~15 KB | **93%** |
-| `logo-simbolo.png` | 520×543, **138 KB** | **44×44px** | 88px | ~4 KB | **97%** |
-| `foto-senhora-pilates.jpg` | 1078×1243, 190 KB | card ~360px | 800px | ~60 KB | 68% |
-| `foto-ventosaterapia.jpg` | 868×1280, 86 KB | card ~360px | 800px | ~50 KB | 42% |
-| `video-atendimento.mp4` | 344 KB | 118×88px | — | manter | — |
+| `logo-simbolo` | 138 KB | **5 KB** | 88px (render 44px) | 82 | −96% |
+| `darcilene-retrato` | 700 KB | **33 KB** | mantida 687px | 90 | −95% |
+| `logo-completo` | 207 KB | **35 KB** | 352px (render 176px) | 82 | −83% |
+| `foto-ventosaterapia` | 86 KB | **34 KB** | 800px | 82 | −61% |
+| `foto-senhora-pilates` | 190 KB | **80 KB** | 800px | 82 | −58% |
+| **Total** | **1320 KB** | **187 KB** | | | **−86%** |
 
-O caso mais grave é o `logo-simbolo.png`: 138 KB entregues para desenhar 44×44
-pixels, em **todas** as páginas. O `darcilene-retrato.jpg` tem 700 KB para
-687px de largura — está salvo em qualidade quase sem perdas, não é questão de
-dimensão. Hoje a home baixa **1,3 MB só de imagem**; a estimativa depois é
-~200 KB.
+Derivados novos: `favicon.png` (180×180, paleta indexada — 27 KB → 9 KB) e
+`og-image.jpg` (1200×630, logo centralizado sobre `--color-surface`).
 
-### Como plugar no build (a única mudança de código)
+Peso inicial por página, já sem o corpo do vídeo (que é `preload="metadata"`):
+`sobre` 155 KB, `contato` 199 KB, `servicos` 238 KB, `index` ~244 KB — contra os
+1,3 MB só de imagem que a home baixava antes.
 
-Não é preciso tocar nos artboards nem no HTML. Em `rewriteUrls()`, fazer o build
-**preferir um irmão `.webp`** quando ele existir:
+### Decisões de qualidade
 
-```js
-return html.replace(/(src|href|poster)="\.\/([^"]+)"/g, (_, attr, file) => {
-  const webp = file.replace(/\.(jpe?g|png)$/i, '.webp');
-  const use = (webp !== file && fs.existsSync(path.join(ROOT, webp))) ? webp : file;
-  assetsUsed.add(use);
-  return `${attr}="/assets/${use}"`;
-});
-```
+A qualidade foi escolhida por medição, não por padrão único. O retrato tem
+entropia 6,75 e ficou em 0,29 bpp a q82 — apertado para um rosto em destaque,
+então subiu para q90 (+11 KB). As fotos de card aparecem a ~360px e não
+justificam o mesmo: a de Pilates custa 80 KB a q82 contra 118 KB a q90. O
+`logo-completo` foi mantido a q82 porque q70 só economizava 4 KB.
 
-Consequências: a conversão passa a ser opt-in por arquivo, o canvas continua
-apontando para os `.jpg`/`.png` originais (que seguem sendo a fonte de alta
-resolução), e reverter é apagar o `.webp`. Nenhum `<picture>` é necessário —
-WebP tem suporte universal desde 2020.
+O `og-image.jpg` é um arquivo separado de propósito: `logo-completo` encolheu
+para 352px, e o preview de link no WhatsApp e no Facebook exige ≥1200×630.
 
-### Como converter
+### O que o build passou a fazer sozinho
 
-Nenhuma ferramenta de imagem está instalada nesta máquina (`cwebp`, `magick` e
-`ffmpeg` ausentes). Como o build já roda em Node, o caminho de menor atrito é
-`sharp` como devDependency — sem instalação de sistema:
+- Prefere o irmão `.webp` em `rewriteUrls()`
+- Injeta `width`/`height` em todo `<img>` a partir de `assets.json`, que o script
+  de otimização escreve — elimina layout shift sem medir nada à mão
+- Copia `favicon` e `ogImage` para `dist/assets/`: nenhum dos dois aparece no
+  corpo do HTML, então não entravam pela varredura normal de assets
 
-```bash
-npm init -y && npm i -D sharp
-node scripts/otimizar-imagens.mjs   # a escrever: lê a tabela acima, gera os .webp
-```
+### Pendente nesta frente
 
-O script deve redimensionar para o alvo da tabela, converter em WebP com
-qualidade ~82, e **nunca sobrescrever o original** — grava o `.webp` ao lado.
-
-### Dois cuidados
-
-1. **A imagem de OG não pode encolher.** `logo-completo.png` acumula dois papéis:
-   logo do rodapé (176px) e imagem de compartilhamento em `seo.json`. Reduzir
-   para 352px estraga o preview no WhatsApp e no Facebook, que querem ≥1200×630.
-   Gerar um `og-image.jpg` dedicado (1200×630, fundo sólido, logo centralizado) e
-   apontar `site.ogImage` para ele.
-2. **`width`/`height` explícitos nos `<img>`.** Hoje não existem, e sem eles há
-   layout shift durante o carregamento (penalizado no Lighthouse). Como o build
-   já conhece cada arquivo, ele pode ler as dimensões e injetar os atributos
-   sozinho — vale fazer junto.
-
-### Verificação
-
-- `du -sh dist/assets/` sai de ~1,7 MB para ~600 KB (o vídeo passa a dominar)
-- Aba Network do DevTools na home: total de imagem abaixo de 250 KB
-- Lighthouse mobile ≥ 90 em Performance
-- Nenhum `.jpg`/`.png` restante em `dist/assets/` além dos que não foram convertidos
-- Preview do link colado no WhatsApp continua mostrando a imagem corretamente
+`video-atendimento.mp4` continua com 340 KB para um player de 118×88px. Reduzir
+exige `ffmpeg`, que não está instalado. Como o `preload="metadata"` evita que ele
+pese no carregamento inicial, ficou de fora.
 
 ## Fase 5 — Servidor local (Caddy)
 

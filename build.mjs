@@ -135,11 +135,30 @@ function rewriteUrls(html) {
     return `${attr}="${target.url}${frag}"`;
   });
   return html.replace(/(src|href|poster)="\.\/([^"]+)"/g, (_, attr, file) => {
-    assetsUsed.add(file);
-    return `${attr}="/assets/${file}"`;
+    // Prefere a versão otimizada quando ela existe (npm run otimizar); o canvas
+    // segue apontando para o original em alta, que continua sendo a fonte.
+    const webp = file.replace(/\.(jpe?g|png)$/i, '.webp');
+    const use = webp !== file && findAsset(webp) ? webp : file;
+    assetsUsed.add(use);
+    return `${attr}="/assets/${use}"`;
   });
 }
 const assetsUsed = new Set();
+
+/** Dimensões reais dos assets, escritas por scripts/otimizar-imagens.mjs. */
+const assetDims = fs.existsSync(path.join(ROOT, 'assets.json'))
+  ? JSON.parse(fs.readFileSync(path.join(ROOT, 'assets.json'), 'utf8'))
+  : {};
+
+/** Sem width/height o layout salta enquanto a imagem carrega (CLS no Lighthouse). */
+function addImageDimensions(html) {
+  return html.replace(/<img\b([^>]*)>/g, (full, attrs) => {
+    if (/\bwidth=/.test(attrs)) return full;
+    const src = /\bsrc="\/assets\/([^"]+)"/.exec(attrs)?.[1];
+    const dim = src && assetDims[src];
+    return dim ? `<img${attrs} width="${dim.width}" height="${dim.height}">` : full;
+  });
+}
 
 /** 6. <head> completo — o que o canvas nunca teve. */
 function buildHead(page) {
@@ -247,6 +266,7 @@ for (const page of pages) {
   let html = unwrapCanvas(fs.readFileSync(path.join(ROOT, page.source), 'utf8'), page.source);
   html = resolveImageSlots(html, page);
   html = rewriteUrls(html);
+  html = addImageDimensions(html);
   html = hoistStyles(html);
 
   const pending = [...html.matchAll(/\[[a-zà-ú][^\]]{2,40}\]/gi)].map((m) => m[0]);
@@ -298,7 +318,11 @@ for (const file of assetsUsed) {
   if (!fs.existsSync(from)) { warn(`asset referenciado mas ausente: ${file}`); continue; }
   fs.copyFileSync(from, path.join(ASSETS, path.basename(file)));
 }
-if (findAsset(site.favicon)) fs.copyFileSync(path.join(ROOT, site.favicon), path.join(ASSETS, site.favicon));
+for (const extra of [site.favicon, site.ogImage]) {
+  // Nenhum dos dois aparece no HTML — só no <head> — então não entram por assetsUsed.
+  if (findAsset(extra)) fs.copyFileSync(path.join(ROOT, extra), path.join(ASSETS, extra));
+  else warn(`asset do <head> ausente: ${extra}`);
+}
 
 fs.writeFileSync(path.join(DIST, 'robots.txt'),
   `User-agent: *\nAllow: /\n\nSitemap: ${site.baseUrl}/sitemap.xml\n`);

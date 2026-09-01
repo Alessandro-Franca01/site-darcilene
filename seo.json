@@ -4,8 +4,8 @@
     "baseUrl": "https://site-darcilene.vercel.app",
     "telephone": "+5583988559983",
     "areaServed": "[cidade e região]",
-    "favicon": "logo-simbolo.png",
-    "ogImage": "logo-completo.png",
+    "favicon": "favicon.png",
+    "ogImage": "og-image.jpg",
     "fontHref": "https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap"
   },
   "pages": [
