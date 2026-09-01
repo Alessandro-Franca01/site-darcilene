@@ -1,0 +1,25 @@
+# Normaliza finais de linha: LF no repositório, nativo no working tree.
+* text=auto eol=lf
+
+*.html  text
+*.css   text
+*.js    text
+*.mjs   text
+*.json  text
+*.md    text
+*.yml   text
+Caddyfile text
+
+# Binários — nunca normalizar nem tentar diff textual.
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.mp4   binary
+*.woff  binary
+*.woff2 binary
+
+# Thumbnail do canvas: WebP sem extensão.
+.thumbnail binary

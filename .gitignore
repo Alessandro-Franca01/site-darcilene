@@ -1,0 +1,25 @@
+# Saída do build estático (gerada por build.mjs)
+dist/
+
+# Dependências
+node_modules/
+
+# Credenciais e segredos — nunca versionar
+.env
+.env.*
+*.pem
+*.key
+.cloudflared/
+# Credenciais do Cloudflare Tunnel (arquivo nomeado com o UUID do túnel)
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-*.json
+
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~
