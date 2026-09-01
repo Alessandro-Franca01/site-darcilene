@@ -21,8 +21,12 @@ const STRICT = process.argv.includes('--strict');
 
 const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'seo.json'), 'utf8'));
 const { site, pages } = config;
-// Em preview da Vercel o domínio muda a cada deploy; canonical e OG seguem junto.
-if (process.env.VERCEL_URL) site.baseUrl = `https://${process.env.VERCEL_URL}`;
+// Só em preview o baseUrl segue a URL do deployment, para o preview ser
+// autoconsistente. Em produção vale sempre o seo.json: VERCEL_URL é a URL
+// efemera daquele build e poria um canonical que deixa de existir no proximo.
+if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL) {
+  site.baseUrl = `https://${process.env.VERCEL_URL}`;
+}
 
 const warnings = [];
 const warn = (msg) => { warnings.push(msg); };
