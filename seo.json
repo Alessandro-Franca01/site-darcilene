@@ -1,0 +1,42 @@
+{
+  "site": {
+    "name": "Darcilene Xavier Fisioterapia",
+    "baseUrl": "https://site-darcilene.vercel.app",
+    "telephone": "+5583988559983",
+    "areaServed": "[cidade e região]",
+    "favicon": "logo-simbolo.png",
+    "ogImage": "logo-completo.png",
+    "fontHref": "https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap"
+  },
+  "pages": [
+    {
+      "source": "Home.dc.html",
+      "slug": "index.html",
+      "url": "/",
+      "title": "Darcilene Xavier — Fisioterapia domiciliar",
+      "description": "Fisioterapia a domicílio com acolhimento e cuidado profissional: ortopédica, Pilates clínico, ventosaterapia e atenção à terceira idade. Agende pelo WhatsApp."
+    },
+    {
+      "source": "Sobre.dc.html",
+      "slug": "sobre.html",
+      "url": "/sobre",
+      "title": "Sobre a Darcilene — Fisioterapeuta domiciliar",
+      "description": "Conheça a fisioterapeuta Darcilene Xavier: formação, abordagem de tratamento e o cuidado que leva até a casa de cada paciente."
+    },
+    {
+      "source": "Servicos.dc.html",
+      "slug": "servicos.html",
+      "url": "/servicos",
+      "optionalSection": "resultados",
+      "title": "Serviços — Fisioterapia ortopédica, Pilates e ventosaterapia",
+      "description": "Fisioterapia ortopédica, Pilates clínico, ventosaterapia e cuidado à terceira idade, com atendimento domiciliar no seu ritmo e no conforto da sua casa."
+    },
+    {
+      "source": "Contato.dc.html",
+      "slug": "contato.html",
+      "url": "/contato",
+      "title": "Contato — Agende seu atendimento domiciliar",
+      "description": "Agende sua sessão de fisioterapia domiciliar pelo WhatsApp (83) 98855-9983. Atendimento de segunda a sexta, das 8h às 18h."
+    }
+  ]
+}

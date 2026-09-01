@@ -1,0 +1,38 @@
+/* Ajustes responsivos escritos à mão.
+   As media queries derivadas dos estilos do canvas (grids, títulos, paddings)
+   são geradas automaticamente em generated.css pelo build. Aqui ficam só os
+   casos que nenhuma regra automática resolve. Carregado depois de
+   generated.css, então vence por ordem de origem. */
+
+/* Rede de segurança: nada estoura a viewport. */
+body { overflow-x: hidden; }
+img, video, svg { max-width: 100%; }
+img, video { height: auto; }
+
+/* O header é um flex de logo + nav + botão. Em telas estreitas a nav quebra
+   para a segunda linha e rola horizontalmente em vez de espremer os itens. */
+@media (max-width: 760px) {
+  body header { row-gap: 12px; padding-left: 20px; padding-right: 20px; }
+  body header nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  body header nav::-webkit-scrollbar { display: none; }
+  body header nav a { white-space: nowrap; }
+}
+
+/* Blocos que o canvas posiciona em absoluto são decorativos: em telas pequenas
+   só atrapalham o fluxo e podem criar scroll lateral. */
+@media (max-width: 640px) {
+  body section > div[class][style] { position: static; }
+}
+
+/* Vídeo do hero: no desktop é uma miniatura de largura fixa; no celular
+   ocupa a linha inteira para continuar clicável. */
+@media (max-width: 480px) {
+  body video { width: 100% !important; height: auto !important; }
+}

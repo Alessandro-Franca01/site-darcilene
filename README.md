@@ -32,15 +32,22 @@ JavaScript, sem CDN externa, responsivo e indexável), com saída em `dist/`.
 
 ## Build e publicação
 
-Ainda não implementados — ver `PLANO-PRODUCAO.md`. Quando existirem:
-
 ```bash
-node build.mjs      # gera dist/
-caddy run           # serve dist/ em http://127.0.0.1:8080
+node build.mjs            # gera dist/
+node build.mjs --strict   # falha se houver [marcador] pendente — usar antes de publicar
 ```
 
-O Cloudflare Tunnel expõe o Caddy local na internet. As credenciais do túnel
-ficam em `%USERPROFILE%\.cloudflared\` e **não pertencem a este repositório**.
+O build não tem dependências: só Node 18+. Ele desmonta o envelope do canvas,
+transforma cada `style=` numa classe em `generated.css`, converte `style-hover=`
+em `:hover` de verdade, e deriva as media queries dos próprios estilos — se o
+canvas mudar, o responsivo acompanha. Também se recusa a publicar as fotos
+Antes/Depois se os arquivos não existirem: a seção sai inteira.
+
+Hospedagem atual: **Vercel**, via `vercel.json` (`buildCommand: node build.mjs`,
+`outputDirectory: dist`). O `dist/` não é versionado — a Vercel o reconstrói.
+
+Depois, a intenção é migrar para **Cloudflare Tunnel** servindo o mesmo `dist/`
+por um Caddy local; ver `PLANO-PRODUCAO.md`, fases 5 a 8.
 
 ## Pendências de conteúdo
 
