@@ -91,15 +91,83 @@ Como as classes geradas são hashes, os overrides precisam de âncoras estáveis
 
 Regra geral no topo: `img,video{max-width:100%;height:auto}` e `body{overflow-x:hidden}` como rede de segurança.
 
-## Fase 4 — Assets
+## Fase 4 — Assets  *(mapeada, não executada)*
 
-- Excluir do build: `photo-darcilene.jpg`, `uploads/`.
-- Converter `darcilene-retrato.jpg` (716 KB), `foto-senhora-pilates.jpg` (195 KB), `foto-ventosaterapia.jpg` (88 KB) e as 4 fotos Antes/Depois para **WebP** (qualidade ~82) — esperado ~700 KB → ~80 KB no maior. Manter o `.jpg` como fallback em `<picture>` só se necessário.
-- `logo-simbolo.png` (141 KB) e `logo-completo.png` (212 KB) → WebP + PNG comprimido.
-- Todos os `<img>` ganham `width`/`height` explícitos (evita layout shift) e `loading="lazy"` fora da dobra.
-- `video-atendimento.mp4` (348 KB) já está aceitável; manter `preload="metadata"` e adicionar `poster`.
+**Status:** pendente. Não bloqueia deploy — o site já funciona. É ganho de
+performance e de custo de banda, a ser feito quando fizer diferença (Lighthouse
+baixo, 3G lento, ou quando a Vercel começar a cobrar tráfego).
 
-Alvo: **< 200 KB por página** no primeiro carregamento, contra os ~500 KB de JS + 4,5 MB atuais.
+### Diagnóstico medido
+
+Dimensão real do arquivo contra o tamanho em que ele é de fato renderizado:
+
+| Arquivo | Original | Renderizado | Alvo (2x) | Estimado | Ganho |
+|---|---|---|---|---|---|
+| `darcilene-retrato.jpg` | 687×906, **700 KB** | coluna ~550px | 687px (mantém) | ~70 KB | **90%** |
+| `logo-completo.png` | 760×747, **207 KB** | 176px de largura | 352px | ~15 KB | **93%** |
+| `logo-simbolo.png` | 520×543, **138 KB** | **44×44px** | 88px | ~4 KB | **97%** |
+| `foto-senhora-pilates.jpg` | 1078×1243, 190 KB | card ~360px | 800px | ~60 KB | 68% |
+| `foto-ventosaterapia.jpg` | 868×1280, 86 KB | card ~360px | 800px | ~50 KB | 42% |
+| `video-atendimento.mp4` | 344 KB | 118×88px | — | manter | — |
+
+O caso mais grave é o `logo-simbolo.png`: 138 KB entregues para desenhar 44×44
+pixels, em **todas** as páginas. O `darcilene-retrato.jpg` tem 700 KB para
+687px de largura — está salvo em qualidade quase sem perdas, não é questão de
+dimensão. Hoje a home baixa **1,3 MB só de imagem**; a estimativa depois é
+~200 KB.
+
+### Como plugar no build (a única mudança de código)
+
+Não é preciso tocar nos artboards nem no HTML. Em `rewriteUrls()`, fazer o build
+**preferir um irmão `.webp`** quando ele existir:
+
+```js
+return html.replace(/(src|href|poster)="\.\/([^"]+)"/g, (_, attr, file) => {
+  const webp = file.replace(/\.(jpe?g|png)$/i, '.webp');
+  const use = (webp !== file && fs.existsSync(path.join(ROOT, webp))) ? webp : file;
+  assetsUsed.add(use);
+  return `${attr}="/assets/${use}"`;
+});
+```
+
+Consequências: a conversão passa a ser opt-in por arquivo, o canvas continua
+apontando para os `.jpg`/`.png` originais (que seguem sendo a fonte de alta
+resolução), e reverter é apagar o `.webp`. Nenhum `<picture>` é necessário —
+WebP tem suporte universal desde 2020.
+
+### Como converter
+
+Nenhuma ferramenta de imagem está instalada nesta máquina (`cwebp`, `magick` e
+`ffmpeg` ausentes). Como o build já roda em Node, o caminho de menor atrito é
+`sharp` como devDependency — sem instalação de sistema:
+
+```bash
+npm init -y && npm i -D sharp
+node scripts/otimizar-imagens.mjs   # a escrever: lê a tabela acima, gera os .webp
+```
+
+O script deve redimensionar para o alvo da tabela, converter em WebP com
+qualidade ~82, e **nunca sobrescrever o original** — grava o `.webp` ao lado.
+
+### Dois cuidados
+
+1. **A imagem de OG não pode encolher.** `logo-completo.png` acumula dois papéis:
+   logo do rodapé (176px) e imagem de compartilhamento em `seo.json`. Reduzir
+   para 352px estraga o preview no WhatsApp e no Facebook, que querem ≥1200×630.
+   Gerar um `og-image.jpg` dedicado (1200×630, fundo sólido, logo centralizado) e
+   apontar `site.ogImage` para ele.
+2. **`width`/`height` explícitos nos `<img>`.** Hoje não existem, e sem eles há
+   layout shift durante o carregamento (penalizado no Lighthouse). Como o build
+   já conhece cada arquivo, ele pode ler as dimensões e injetar os atributos
+   sozinho — vale fazer junto.
+
+### Verificação
+
+- `du -sh dist/assets/` sai de ~1,7 MB para ~600 KB (o vídeo passa a dominar)
+- Aba Network do DevTools na home: total de imagem abaixo de 250 KB
+- Lighthouse mobile ≥ 90 em Performance
+- Nenhum `.jpg`/`.png` restante em `dist/assets/` além dos que não foram convertidos
+- Preview do link colado no WhatsApp continua mostrando a imagem corretamente
 
 ## Fase 5 — Servidor local (Caddy)
 
