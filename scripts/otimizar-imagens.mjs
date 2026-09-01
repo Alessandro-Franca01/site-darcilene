@@ -30,7 +30,8 @@ const SURFACE = '#f3f7ee'; // --color-surface do design system
 const TARGETS = [
   { src: 'logo-simbolo.png', width: 88, q: 82, note: 'header, 44×44 na tela' },
   { src: 'logo-completo.png', width: 352, q: 82, note: 'rodapé, 176px na tela' },
-  { src: 'darcilene-retrato.jpg', width: null, q: 90, note: 'retrato, coluna ~550px' },
+  { src: 'darcilene-hero.png', width: null, q: 90, note: 'hero, coluna ~550px' },
+  { src: 'darcilene-retrato.jpg', width: null, q: 90, note: 'retrato, página Sobre' },
   { src: 'foto-senhora-pilates.jpg', width: 800, q: 82, note: 'cards' },
   { src: 'foto-ventosaterapia.jpg', width: 800, q: 82, note: 'cards' },
 ];
